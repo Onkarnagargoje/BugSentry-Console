@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaBriefcase, FaDocker, FaCode, FaShieldAlt, FaBug, FaLightbulb } from 'react-icons/fa';
 import {
   FiMenu, FiSearch, FiInbox, FiMessageSquare, FiRefreshCw, FiZap,
@@ -167,7 +167,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
       <div className="light-spot spot-1" />
       <div className="light-spot spot-2" />
 
-      {/* â”€â”€ Top Navbar â”€â”€ */}
+      {/* ── Top Navbar ── */}
       <header className="dev-topbar">
         <div className="dev-topbar-left">
           <button className="icon-btn"><FiMenu /></button>
@@ -204,29 +204,29 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
         </div>
       </header>
 
-      {/* â”€â”€ Main Grid â”€â”€ */}
+      {/* ── Main Grid ── */}
       <div className="dev-main-grid">
 
-        {/* â”€â”€ Left Sidebar â”€â”€ */}
+        {/* ── Left Sidebar ── */}
         <aside className="dev-sidebar-left">
           <div className="dev-dropdown">
             {user?.picture
               ? <img src={user.picture} alt="avatar" className="dev-user-avatar-img small" />
               : <div className="dev-user-avatar small" />
             }
-            <span>{user?.name || user?.email || 'â€¦'}</span>
-            <span className="dropdown-arrow">â–¼</span>
+            <span>{user?.name || user?.email || '...'}</span>
+            <span className="dropdown-arrow">▼</span>
           </div>
 
           <div className="dev-section-header">
             <h4>Your repositories</h4>
-            {syncing && <span className="sync-label">Syncingâ€¦</span>}
+            {syncing && <span className="sync-label">Syncing...</span>}
           </div>
 
           <input
             type="text"
             className="dev-input-filter"
-            placeholder="Find a repositoryâ€¦"
+            placeholder="Find a repository..."
             value={filterText}
             onChange={e => setFilterText(e.target.value)}
           />
@@ -238,7 +238,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 : displayedRepos.length === 0
                   ? <li className="no-repos-msg">
                       {repos.length === 0
-                        ? 'Syncing your GitHub reposâ€¦'
+                        ? 'Syncing your GitHub repos...'
                         : 'No repos match filter.'}
                     </li>
                   : displayedRepos.map(repo => (
@@ -291,10 +291,10 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
           </div>
         </aside>
 
-        {/* â”€â”€ Center Content â”€â”€ */}
+        {/* ── Center Content ── */}
         <main className="dev-center-feed">
 
-          {/* â”€â”€ DEFAULT HOME (no repo selected) â”€â”€ */}
+          {/* ── DEFAULT HOME (no repo selected) ── */}
           {!selectedRepo && (
             <>
               <h2 className="feed-title">Home</h2>
@@ -307,7 +307,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 />
                 <div className="ai-box-toolbar">
                   <div className="toolbar-left">
-                    <button className="btn-outline" disabled><FiMessageSquare /> Ask â–¼</button>
+                    <button className="btn-outline" disabled><FiMessageSquare /> Ask ▼</button>
                   </div>
                   <div className="toolbar-right">
                     <span className="ai-model-selector">BugSentry Copilot</span>
@@ -327,7 +327,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
             </>
           )}
 
-          {/* â”€â”€ REPO DETAIL VIEW (repo selected) â”€â”€ */}
+          {/* ── REPO DETAIL VIEW (repo selected) ── */}
           {selectedRepo && (
             <>
               {/* Header */}
@@ -369,18 +369,18 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 </span>
               </div>
 
-              {/* â”€â”€ Scanning progress card â”€â”€ */}
+              {/* ── Scanning progress card ── */}
               {isRunning && (
                 <div className="scan-running-card">
                   <div className="scan-spinner" />
                   <div>
                     <h3>Analysis In Progress</h3>
-                    <p>7 AI agents are scanning your repository. This may take 30â€“90 secondsâ€¦</p>
+                    <p>7 AI agents are scanning your repository. This may take 30-90 seconds...</p>
                   </div>
                 </div>
               )}
 
-              {/* â”€â”€ Failed card â”€â”€ */}
+              {/* ── Failed card ── */}
               {selectedStatus === 'failed' && (
                 <div className="scan-failed-card">
                   <FiAlertCircle size={24} color="#f85149" />
@@ -394,14 +394,14 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 </div>
               )}
 
-              {/* â”€â”€ Enhanced Analysis Summary â”€â”€ */}
+              {/* ── Enhanced Analysis Summary ── */}
               {isAnalyzed && currentResult && (
                 <div className="analysis-summary-view animate-fade-in">
                   
                   {/* Executive Summary Section */}
                   <div className="summary-card main-summary">
                     <div className="card-header">
-                        <FiShieldAlt className="header-icon" />
+                        <FiShield className="header-icon" />
                         <h3>AI Security Protocol: Analysis Summary</h3>
                     </div>
                     <div className="card-body">
@@ -495,7 +495,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 </div>
               )}
 
-              {/* â”€â”€ BugSentry Copilot Chat â”€â”€ */}
+              {/* ── BugSentry Copilot Chat ── */}
               <div className={`copilot-section ${(!isAnalyzed && !isRunning) ? 'copilot-locked' : ''}`}>
                 <div className="copilot-header">
                   <FiZap className="copilot-zap" />
@@ -523,10 +523,10 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                   <textarea
                     placeholder={
                       isAnalyzed
-                        ? `Ask about ${selectedRepo.name}â€¦ e.g. "What are the main security risks?"`
+                        ? `Ask about ${selectedRepo.name}... e.g. "What are the main security risks?"`
                         : isRunning
-                          ? 'Waiting for scan to completeâ€¦'
-                          : 'Select a repo to trigger scan and enable copilotâ€¦'
+                          ? 'Waiting for scan to complete...'
+                          : 'Select a repo to trigger scan and enable copilot...'
                     }
                     disabled={!isAnalyzed || chatLoading}
                     value={chatInput}
@@ -542,7 +542,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                   <div className="ai-box-toolbar">
                     <div className="toolbar-left">
                       <span className="ai-model-selector">
-                        BugSentry Copilot â€¢ {selectedRepo.name}
+                        BugSentry Copilot • {selectedRepo.name}
                       </span>
                     </div>
                     <div className="toolbar-right">
