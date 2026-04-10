@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { FaBriefcase, FaDocker, FaCode, FaShieldAlt, FaBug, FaLightbulb } from 'react-icons/fa';
 import {
   FiMenu, FiSearch, FiInbox, FiMessageSquare, FiRefreshCw, FiZap,
@@ -126,10 +126,15 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
         body: JSON.stringify({ question }),
       });
       const data = await r.json();
-      const answer = data.answer || data.detail || 'No response from AI.';
+      if (!r.ok) {
+        const detail = data?.detail || `Copilot failed with status ${r.status}`;
+        throw new Error(detail);
+      }
+      const answer = data.answer || 'No response from AI.';
       setChatHistory(prev => [...prev, { role: 'bot', text: answer }]);
-    } catch {
-      setChatHistory(prev => [...prev, { role: 'bot', text: '⚠️ Failed to reach BugSentry Copilot. Please try again.' }]);
+    } catch (err) {
+      const message = err?.message || 'Failed to reach BugSentry Copilot. Please try again.';
+      setChatHistory(prev => [...prev, { role: 'bot', text: `⚠️ ${message}` }]);
     } finally {
       setChatLoading(false);
     }
@@ -162,7 +167,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
       <div className="light-spot spot-1" />
       <div className="light-spot spot-2" />
 
-      {/* ── Top Navbar ── */}
+      {/* â”€â”€ Top Navbar â”€â”€ */}
       <header className="dev-topbar">
         <div className="dev-topbar-left">
           <button className="icon-btn"><FiMenu /></button>
@@ -199,29 +204,29 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
         </div>
       </header>
 
-      {/* ── Main Grid ── */}
+      {/* â”€â”€ Main Grid â”€â”€ */}
       <div className="dev-main-grid">
 
-        {/* ── Left Sidebar ── */}
+        {/* â”€â”€ Left Sidebar â”€â”€ */}
         <aside className="dev-sidebar-left">
           <div className="dev-dropdown">
             {user?.picture
               ? <img src={user.picture} alt="avatar" className="dev-user-avatar-img small" />
               : <div className="dev-user-avatar small" />
             }
-            <span>{user?.name || user?.email || '…'}</span>
-            <span className="dropdown-arrow">▼</span>
+            <span>{user?.name || user?.email || 'â€¦'}</span>
+            <span className="dropdown-arrow">â–¼</span>
           </div>
 
           <div className="dev-section-header">
             <h4>Your repositories</h4>
-            {syncing && <span className="sync-label">Syncing…</span>}
+            {syncing && <span className="sync-label">Syncingâ€¦</span>}
           </div>
 
           <input
             type="text"
             className="dev-input-filter"
-            placeholder="Find a repository…"
+            placeholder="Find a repositoryâ€¦"
             value={filterText}
             onChange={e => setFilterText(e.target.value)}
           />
@@ -233,7 +238,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 : displayedRepos.length === 0
                   ? <li className="no-repos-msg">
                       {repos.length === 0
-                        ? 'Syncing your GitHub repos…'
+                        ? 'Syncing your GitHub reposâ€¦'
                         : 'No repos match filter.'}
                     </li>
                   : displayedRepos.map(repo => (
@@ -286,10 +291,10 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
           </div>
         </aside>
 
-        {/* ── Center Content ── */}
+        {/* â”€â”€ Center Content â”€â”€ */}
         <main className="dev-center-feed">
 
-          {/* ── DEFAULT HOME (no repo selected) ── */}
+          {/* â”€â”€ DEFAULT HOME (no repo selected) â”€â”€ */}
           {!selectedRepo && (
             <>
               <h2 className="feed-title">Home</h2>
@@ -297,12 +302,12 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
               {/* Disabled copilot box */}
               <div className="dev-ai-box chatbot-disabled">
                 <textarea
-                  placeholder="← Select a repository from the sidebar to start analysis and chat with BugSentry Copilot"
+                  placeholder="â† Select a repository from the sidebar to start analysis and chat with BugSentry Copilot"
                   disabled
                 />
                 <div className="ai-box-toolbar">
                   <div className="toolbar-left">
-                    <button className="btn-outline" disabled><FiMessageSquare /> Ask ▼</button>
+                    <button className="btn-outline" disabled><FiMessageSquare /> Ask â–¼</button>
                   </div>
                   <div className="toolbar-right">
                     <span className="ai-model-selector">BugSentry Copilot</span>
@@ -322,7 +327,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
             </>
           )}
 
-          {/* ── REPO DETAIL VIEW (repo selected) ── */}
+          {/* â”€â”€ REPO DETAIL VIEW (repo selected) â”€â”€ */}
           {selectedRepo && (
             <>
               {/* Header */}
@@ -360,22 +365,22 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                   <span className="repo-meta-tag"><FiGitBranch /> {selectedRepo.forks_count}</span>
                 )}
                 <span className="repo-meta-tag">
-                  {selectedRepo.private ? '🔒 Private' : '🌐 Public'}
+                  {selectedRepo.private ? 'ðŸ”’ Private' : 'ðŸŒ Public'}
                 </span>
               </div>
 
-              {/* ── Scanning progress card ── */}
+              {/* â”€â”€ Scanning progress card â”€â”€ */}
               {isRunning && (
                 <div className="scan-running-card">
                   <div className="scan-spinner" />
                   <div>
                     <h3>Analysis In Progress</h3>
-                    <p>7 AI agents are scanning your repository. This may take 30–90 seconds…</p>
+                    <p>7 AI agents are scanning your repository. This may take 30â€“90 secondsâ€¦</p>
                   </div>
                 </div>
               )}
 
-              {/* ── Failed card ── */}
+              {/* â”€â”€ Failed card â”€â”€ */}
               {selectedStatus === 'failed' && (
                 <div className="scan-failed-card">
                   <FiAlertCircle size={24} color="#f85149" />
@@ -389,7 +394,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 </div>
               )}
 
-              {/* ── Enhanced Analysis Summary ── */}
+              {/* â”€â”€ Enhanced Analysis Summary â”€â”€ */}
               {isAnalyzed && currentResult && (
                 <div className="analysis-summary-view animate-fade-in">
                   
@@ -490,7 +495,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                 </div>
               )}
 
-              {/* ── BugSentry Copilot Chat ── */}
+              {/* â”€â”€ BugSentry Copilot Chat â”€â”€ */}
               <div className={`copilot-section ${(!isAnalyzed && !isRunning) ? 'copilot-locked' : ''}`}>
                 <div className="copilot-header">
                   <FiZap className="copilot-zap" />
@@ -518,10 +523,10 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                   <textarea
                     placeholder={
                       isAnalyzed
-                        ? `Ask about ${selectedRepo.name}… e.g. "What are the main security risks?"`
+                        ? `Ask about ${selectedRepo.name}â€¦ e.g. "What are the main security risks?"`
                         : isRunning
-                          ? 'Waiting for scan to complete…'
-                          : 'Select a repo to trigger scan and enable copilot…'
+                          ? 'Waiting for scan to completeâ€¦'
+                          : 'Select a repo to trigger scan and enable copilotâ€¦'
                     }
                     disabled={!isAnalyzed || chatLoading}
                     value={chatInput}
@@ -537,7 +542,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                   <div className="ai-box-toolbar">
                     <div className="toolbar-left">
                       <span className="ai-model-selector">
-                        BugSentry Copilot • {selectedRepo.name}
+                        BugSentry Copilot â€¢ {selectedRepo.name}
                       </span>
                     </div>
                     <div className="toolbar-right">
@@ -569,3 +574,4 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
     </div>
   );
 }
+
