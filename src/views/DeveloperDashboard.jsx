@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaBriefcase, FaDocker, FaCode, FaShieldAlt, FaBug, FaLightbulb } from 'react-icons/fa';
 import {
   FiMenu, FiSearch, FiInbox, FiMessageSquare, FiRefreshCw, FiZap,
@@ -71,6 +71,7 @@ function buildTreeRows(repoStructure) {
 }
 
 export function DeveloperDashboard({ token, onLogout, onBack }) {
+  const AUTO_RUN_ON_REPO_SELECT = true;
   const { user } = useUser(token);
   const { repos, loading: reposLoading, syncing, refetch } = useRepos(token);
 
@@ -85,6 +86,19 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
 
   const chatEndRef = useRef(null);
   const authHeaders = { Authorization: `Bearer ${token}` };
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const runningIds = Object.entries(analysisStatus)
@@ -141,6 +155,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
     setSelectedRepo(repo);
     setChatHistory([]);
 
+    let currentStatus = null;
     if (!analysisStatus[repo.repo_id]) {
       try {
         const r = await fetch(`${SYSTEM_URL}/api/analysis/status/${repo.repo_id}`, { headers: authHeaders });
@@ -148,14 +163,24 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
         if (data.status === 'completed') {
           setAnalysisStatus((prev) => ({ ...prev, [repo.repo_id]: 'completed' }));
           setAnalysisResults((prev) => ({ ...prev, [repo.repo_id]: data.results || data }));
+          currentStatus = 'completed';
         } else if (data.status === 'running') {
           setAnalysisStatus((prev) => ({ ...prev, [repo.repo_id]: 'running' }));
+          currentStatus = 'running';
         } else {
           setAnalysisStatus((prev) => ({ ...prev, [repo.repo_id]: 'not_started' }));
+          currentStatus = 'not_started';
         }
       } catch {
         setAnalysisStatus((prev) => ({ ...prev, [repo.repo_id]: 'not_started' }));
+        currentStatus = 'not_started';
       }
+    } else {
+      currentStatus = analysisStatus[repo.repo_id];
+    }
+
+    if (AUTO_RUN_ON_REPO_SELECT && currentStatus !== 'running' && currentStatus !== 'completed') {
+      runAnalysis(repo);
     }
   };
 
@@ -251,18 +276,52 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
           <button className="icon-btn" onClick={refetch} title="Sync repositories">
             <FiRefreshCw className={syncing ? 'spin' : ''} />
           </button>
-          <button className="icon-btn"><FiInbox /></button>
-          {user?.picture ? <img src={user.picture} alt="avatar" className="dev-user-avatar-img" /> : <div className="dev-user-avatar" />}
-          <button onClick={onLogout} className="logout-btn-small">Sign Out</button>
+          <button className="icon-btn"><FiInbox title="Notifications" /></button>
+          
+          <div className="user-menu-wrapper" ref={userMenuRef}>
+            <div className="profile-trigger" onClick={() => setShowUserMenu(!showUserMenu)}>
+              {user?.picture ? (
+                <img src={user.picture} alt="avatar" className="dev-user-avatar-img" />
+              ) : (
+                <div className="dev-user-avatar" />
+              )}
+              <FiChevronDown style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }} />
+            </div>
+
+            {showUserMenu && (
+              <div className="profile-menu-dropdown">
+                <div className="menu-header" style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ display: 'block', fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Signed in as</span>
+                  <strong style={{ display: 'block', fontSize: '14px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user?.name || user?.email}>
+                    {user?.name || user?.email || 'Developer'}
+                  </strong>
+                </div>
+                <div className="menu-list" style={{ padding: '8px' }}>
+                  <button className="menu-item"><FiSearch size={14} /> Profile</button>
+                  <button className="menu-item"><FiStar size={14} /> Settings</button>
+                  <div className="menu-divider" />
+                  <button className="menu-item logout" onClick={onLogout}>
+                    <FiSend size={14} style={{ transform: 'rotate(180deg)' }} /> Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       <div className="dev-main-grid">
         <aside className="dev-sidebar-left">
-          <div className="dev-dropdown">
-            {user?.picture ? <img src={user.picture} alt="avatar" className="dev-user-avatar-img small" /> : <div className="dev-user-avatar small" />}
-            <span>{user?.name || user?.email || '...'}</span>
-            <span className="dropdown-arrow">v</span>
+          <div className="dev-sidebar-user-fix">
+             {user?.picture ? (
+               <img src={user.picture} alt="avatar" className="dev-user-avatar-img small" />
+             ) : (
+               <div className="dev-user-avatar small" />
+             )}
+             <div className="user-details">
+                <span className="user-name">{user?.name || user?.email || 'Developer'}</span>
+                <span className="user-role">Full Access</span>
+             </div>
           </div>
 
           <div className="dev-section-header">
@@ -379,7 +438,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
               <div className="agent-action-bar">
                 <div>
                   <h3>Agent Control Center</h3>
-                  <p>Run full 7-agent scan to generate directory risks, bug timeline, and practical solution guide.</p>
+                  <p>Auto flow active: selecting a repo starts 7-agent analysis automatically. Use button to re-run anytime.</p>
                 </div>
                 <button className="btn-scan" onClick={() => runAnalysis(selectedRepo)} disabled={isRunning}>
                   <FiZap /> {isRunning ? 'Agents Running...' : 'Run 7 Agents'}
