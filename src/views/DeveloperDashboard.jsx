@@ -44,6 +44,32 @@ function buildFallbackInsights(currentResult) {
   };
 }
 
+function buildTreeRows(repoStructure) {
+  const dirs = Array.isArray(repoStructure?.directories) ? repoStructure.directories : [];
+  const files = Array.isArray(repoStructure?.files_sample) ? repoStructure.files_sample : [];
+  const seen = new Set();
+  const rows = [];
+
+  dirs.forEach((path) => {
+    if (!path || seen.has(`d:${path}`)) return;
+    seen.add(`d:${path}`);
+    rows.push({ type: 'dir', path, depth: path.split('/').length - 1 });
+  });
+
+  files.slice(0, 40).forEach((path) => {
+    if (!path || seen.has(`f:${path}`)) return;
+    seen.add(`f:${path}`);
+    rows.push({ type: 'file', path, depth: path.split('/').length - 1 });
+  });
+
+  rows.sort((a, b) => {
+    if (a.depth !== b.depth) return a.depth - b.depth;
+    return a.path.localeCompare(b.path);
+  });
+
+  return rows.slice(0, 55);
+}
+
 export function DeveloperDashboard({ token, onLogout, onBack }) {
   const { user } = useUser(token);
   const { repos, loading: reposLoading, syncing, refetch } = useRepos(token);
@@ -183,11 +209,20 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
   const isRunning = selectedStatus === 'running';
   const currentResult = selectedRepo ? analysisResults[selectedRepo.repo_id] : null;
   const insight = currentResult?.structured_insights || buildFallbackInsights(currentResult);
+  const deepReport = currentResult?.deep_scan_report || {};
   const repoStructure = currentResult?.repo_context?.repo_structure || {};
-  const directoryHotspots = (insight.directory_hotspots || []).slice(0, 6);
-  const probableFailures = (insight.probable_failures || []).slice(0, 5);
+  const treeRows = buildTreeRows(repoStructure);
+  const deepDirectoryHotspots = (deepReport.directory_risk_summary || []).map((d) => ({
+    path: d.path,
+    risk_reason: d.risk_reason,
+    severity: d.severity,
+  }));
+  const directoryHotspots = (deepDirectoryHotspots.length ? deepDirectoryHotspots : (insight.directory_hotspots || [])).slice(0, 6);
+  const probableFailures = ((deepReport.future_bug_predictions && deepReport.future_bug_predictions.length > 0)
+    ? deepReport.future_bug_predictions
+    : (insight.probable_failures || [])).slice(0, 5);
   const fixPlan = (insight.fix_plan || []).slice(0, 5);
-  const structurePreview = (repoStructure.directories || []).slice(0, 12);
+  const topRiskyFiles = (deepReport.top_risky_files || []).slice(0, 8);
 
   return (
     <div className="dev-dashboard-layout">
@@ -378,7 +413,7 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
                     <div className="summary-chip"><strong>{repoStructure.total_files || 0}</strong><span>Files Scanned</span></div>
                     <div className="summary-chip"><strong>{repoStructure.total_directories || 0}</strong><span>Directories</span></div>
                     <div className="summary-chip"><strong>{probableFailures.length}</strong><span>Likely Failure Points</span></div>
-                    <div className="summary-chip"><strong>{fixPlan.length}</strong><span>Actionable Fixes</span></div>
+                    <div className="summary-chip"><strong>{topRiskyFiles.length || 0}</strong><span>Risky Files Detected</span></div>
                   </div>
 
                   <div className="analysis-grid">
@@ -392,10 +427,33 @@ export function DeveloperDashboard({ token, onLogout, onBack }) {
 
                     <div className="summary-card">
                       <div className="card-header"><FaCode className="header-icon" /><h3>Directory Overview</h3></div>
-                      <div className="directory-list">
-                        {structurePreview.length === 0 && <p className="mini-note">Directory scan unavailable for this run.</p>}
-                        {structurePreview.map((path) => <div key={path} className="directory-item">{path}</div>)}
+                      <div className="tree-view">
+                        {treeRows.length === 0 && <p className="mini-note">Directory scan unavailable for this run.</p>}
+                        {treeRows.map((row, idx) => (
+                          <div key={`${row.type}-${row.path}-${idx}`} className={`tree-row ${row.type}`}>
+                            <span className="tree-indent" style={{ width: `${row.depth * 14}px` }}></span>
+                            <span className="tree-icon">{row.type === 'dir' ? '📁' : '📄'}</span>
+                            <span className="tree-label">{row.path}</span>
+                          </div>
+                        ))}
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="summary-card">
+                    <div className="card-header"><FiShield className="header-icon" /><h3>Detected Risky Files (Auto)</h3></div>
+                    <div className="risk-file-list">
+                      {topRiskyFiles.length === 0 && <p className="mini-note">Risky file list is not available yet. Run agents again for deep scan results.</p>}
+                      {topRiskyFiles.map((file, idx) => (
+                        <div key={`${file.path}-${idx}`} className="risk-file-item">
+                          <div className="risk-file-top">
+                            <strong>{file.path}</strong>
+                            <span className={`risk-badge ${file.risk_level || 'low'}`}>{file.risk_level || 'low'} • {file.risk_score ?? 0}</span>
+                          </div>
+                          <p>{(file.signals || []).slice(0, 2).join(' | ') || file.primary_risk || 'Potential risk detected'}</p>
+                          <div className="risk-meta">Language: {file.language || 'Unknown'} • Chunks: {file.chunk_count ?? 0}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
